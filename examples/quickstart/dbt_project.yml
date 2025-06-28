@@ -1,0 +1,51 @@
+name: 'my_dbt_project'
+version: '1.0.0'
+config-version: 2
+
+# This is a minimal dbt project showing dbt-test-results usage
+
+# Profile configuration
+profile: 'my_dbt_project'
+
+# Paths
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+require-dbt-version: ">=1.0.0"
+
+# Package dependencies  
+packages:
+  - local: "../.."  # Reference the local package for testing
+
+# Basic dbt-test-results configuration
+vars:
+  dbt_test_results:
+    # Enable the package
+    enabled: true
+    
+    # Store test results in tables with '_test_results' suffix
+    schema_suffix: "_test_results"
+    
+    # Automatically create tables and schemas
+    auto_create_tables: true
+    auto_create_schemas: true
+    
+    # Use Delta format for Databricks
+    table_config:
+      file_format: "delta"
+      table_properties:
+        "delta.autoOptimize.optimizeWrite": "true"
+        "delta.autoOptimize.autoCompact": "true"
+
+# Model configurations
+models:
+  my_dbt_project:
+    +materialized: table
+
+# Test result storage is automatically enabled - no on-run-end hook needed!

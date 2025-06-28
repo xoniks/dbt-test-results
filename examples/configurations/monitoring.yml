@@ -1,0 +1,78 @@
+# Monitoring-focused configuration for dbt-test-results
+# Optimized for data quality monitoring and alerting
+
+dbt_test_results:
+  # Monitoring settings
+  enabled: true
+  debug_mode: false
+  fail_on_error: false          # Don't block pipelines on monitoring issues
+  
+  # Centralized monitoring schema
+  absolute_schema: "data_monitoring"
+  table_prefix: "monitor_"
+  
+  # Table management
+  auto_create_tables: true
+  auto_create_schemas: true
+  validate_schema: true
+  
+  # Optimized for frequent monitoring
+  batch_size: 1000
+  max_parallel_batches: 10
+  use_merge_strategy: true      # Better for real-time monitoring
+  
+  # Extended retention for trend analysis
+  retention_days: 730           # 2 years for historical analysis
+  auto_cleanup: false           # Manual cleanup for audit trail
+  
+  # Monitoring-optimized table configuration
+  table_config:
+    file_format: "delta"
+    table_type: "managed"
+    table_properties:
+      "delta.autoOptimize.optimizeWrite": "true"
+      "delta.autoOptimize.autoCompact": "true"
+      "delta.enableChangeDataFeed": "true"  # For change tracking
+      "delta.columnMapping.mode": "none"
+      # Partitioning by date for efficient querying
+      "delta.feature.allowColumnDefaults": "supported"
+  
+  # Focus on critical data quality tests
+  include_test_types:
+    - "unique"
+    - "not_null"
+    - "relationships"
+    - "accepted_values"
+  exclude_test_types:
+    - "expression_is_true"      # Too granular for monitoring
+  include_models: []            # Monitor all models
+  exclude_models:
+    - "staging_*"               # Focus on final models
+    - "tmp_*"
+    - "test_*"
+  failed_tests_only: false     # Track all tests for trend analysis
+  
+  # Rich metadata for monitoring dashboards
+  include_compiled_sql: false
+  include_test_config: true
+  include_timing: true          # Important for performance monitoring
+  include_run_context: true
+  custom_tags:
+    environment: "{{ target.name }}"
+    monitoring_tier: "tier1"
+    alert_channel: "data-quality-alerts"
+    dashboard_url: "https://monitoring.company.com/dbt-quality"
+    sla_hours: "24"
+    escalation_team: "data-platform"
+  
+  # Resilient error handling for monitoring
+  continue_on_storage_error: true  # Don't fail on storage issues
+  max_retries: 3
+  retry_delay: 60               # Longer delays for monitoring
+  
+  # Monitoring-focused logging
+  logging:
+    level: "warn"               # Only log warnings and errors
+    include_timestamps: true
+    log_success: false          # Reduce noise
+    log_config_on_startup: true

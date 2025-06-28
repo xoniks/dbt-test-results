@@ -1,0 +1,276 @@
+version: 2
+
+# Advanced test configuration examples showing different patterns
+
+models:
+  # Dimension table with comprehensive testing
+  - name: dim_customers
+    description: "Customer dimension with full data quality monitoring"
+    config:
+      store_test_results: "customer_quality_checks"
+    meta:
+      owner: "data_team"
+      criticality: "high"
+      sla_hours: 4
+    columns:
+      - name: customer_key
+        description: "Surrogate key for customer"
+        tests:
+          - unique:
+              severity: error
+          - not_null:
+              severity: error
+      
+      - name: customer_id
+        description: "Natural key for customer"
+        tests:
+          - unique:
+              severity: error
+          - not_null:
+              severity: error
+          - dbt_utils.not_empty_string
+      
+      - name: email
+        description: "Customer email"
+        tests:
+          - unique:
+              severity: warn
+          - not_null:
+              severity: warn
+          - email_format  # Custom test
+      
+      - name: status
+        description: "Customer status"
+        tests:
+          - accepted_values:
+              values: ['active', 'inactive', 'suspended', 'pending']
+              severity: error
+          - not_null:
+              severity: error
+      
+      - name: created_at
+        description: "Customer creation timestamp"
+        tests:
+          - not_null:
+              severity: error
+          - no_future_dates:  # Custom test
+              severity: warn
+      
+      - name: lifetime_value
+        description: "Customer lifetime value"
+        tests:
+          - positive_number:  # Custom test
+              severity: warn
+          - reasonable_price:  # Custom test
+              max_price: 1000000
+              severity: warn
+
+  # Fact table with shared monitoring
+  - name: fact_orders
+    description: "Orders fact table with relationship monitoring"
+    config:
+      store_test_results: "transactional_quality_checks"  # Shared with other fact tables
+    meta:
+      owner: "analytics_team"
+      criticality: "critical"
+      sla_hours: 1
+    columns:
+      - name: order_key
+        description: "Surrogate key for order"
+        tests:
+          - unique:
+              severity: error
+          - not_null:
+              severity: error
+      
+      - name: customer_key
+        description: "Foreign key to customer dimension"
+        tests:
+          - not_null:
+              severity: error
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+              severity: error
+      
+      - name: order_amount
+        description: "Order total amount"
+        tests:
+          - not_null:
+              severity: error
+          - positive_number:
+              severity: error
+          - dbt_utils.expression_is_true:
+              expression: "<= 100000"  # Max order amount
+              condition: "order_amount is not null"
+              severity: warn
+      
+      - name: order_date
+        description: "Order date"
+        tests:
+          - not_null:
+              severity: error
+          - no_future_dates:
+              severity: error
+          - dbt_utils.expression_is_true:
+              expression: ">= '2020-01-01'"  # No orders before business start
+              condition: "order_date is not null"
+              severity: warn
+
+  # Another fact table sharing the same results table
+  - name: fact_payments
+    description: "Payments fact table sharing quality monitoring"
+    config:
+      store_test_results: "transactional_quality_checks"  # Same as fact_orders
+    meta:
+      owner: "finance_team"
+      criticality: "critical"
+      sla_hours: 1
+    columns:
+      - name: payment_key
+        description: "Surrogate key for payment"
+        tests:
+          - unique:
+              severity: error
+          - not_null:
+              severity: error
+      
+      - name: order_key
+        description: "Foreign key to order"
+        tests:
+          - not_null:
+              severity: error
+          - relationships:
+              to: ref('fact_orders')
+              field: order_key
+              severity: error
+      
+      - name: payment_amount
+        description: "Payment amount"
+        tests:
+          - not_null:
+              severity: error
+          - positive_number:
+              severity: error
+      
+      - name: payment_method
+        description: "Payment method"
+        tests:
+          - accepted_values:
+              values: ['credit_card', 'debit_card', 'bank_transfer', 'cash', 'check']
+              severity: warn
+          - not_null:
+              severity: error
+
+  # Mart table with business rule testing
+  - name: mart_customer_summary
+    description: "Customer summary mart with business logic validation"
+    config:
+      store_test_results: "business_logic_checks"
+    meta:
+      owner: "business_intelligence"
+      criticality: "medium"
+      sla_hours: 8
+    columns:
+      - name: customer_key
+        description: "Customer identifier"
+        tests:
+          - unique:
+              severity: error
+          - not_null:
+              severity: error
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+              severity: error
+      
+      - name: total_orders
+        description: "Total number of orders"
+        tests:
+          - not_null:
+              severity: error
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              condition: "total_orders is not null"
+              severity: error
+      
+      - name: total_spent
+        description: "Total amount spent"
+        tests:
+          - not_null:
+              severity: error
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              condition: "total_spent is not null"
+              severity: error
+      
+      - name: avg_order_value
+        description: "Average order value"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "= total_spent / NULLIF(total_orders, 0)"
+              condition: "total_orders > 0"
+              severity: warn
+
+# Custom data tests for business logic validation
+tests:
+  - name: fact_orders_payment_reconciliation
+    description: "Ensure all orders have corresponding payments"
+    config:
+      store_test_results: "reconciliation_checks"
+    sql: |
+      SELECT 
+        o.order_key,
+        o.order_amount,
+        COALESCE(SUM(p.payment_amount), 0) as total_payments,
+        o.order_amount - COALESCE(SUM(p.payment_amount), 0) as difference
+      FROM {{ ref('fact_orders') }} o
+      LEFT JOIN {{ ref('fact_payments') }} p ON o.order_key = p.order_key
+      GROUP BY o.order_key, o.order_amount
+      HAVING ABS(o.order_amount - COALESCE(SUM(p.payment_amount), 0)) > 0.01
+
+  - name: dim_customers_email_domain_distribution
+    description: "Monitor email domain distribution for data quality"
+    config:
+      store_test_results: "data_profiling_checks"
+    sql: |
+      WITH email_domains AS (
+        SELECT 
+          REGEXP_EXTRACT(email, '@(.+)$', 1) as domain,
+          COUNT(*) as customer_count,
+          COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () as percentage
+        FROM {{ ref('dim_customers') }}
+        WHERE email IS NOT NULL
+        GROUP BY REGEXP_EXTRACT(email, '@(.+)$', 1)
+      )
+      SELECT *
+      FROM email_domains
+      WHERE percentage > 50  -- Alert if any single domain has >50% of customers
+
+  - name: fact_orders_daily_volume_anomaly
+    description: "Detect unusual daily order volumes"
+    config:
+      store_test_results: "anomaly_detection_checks"
+    sql: |
+      WITH daily_orders AS (
+        SELECT 
+          DATE(order_date) as order_date,
+          COUNT(*) as daily_count
+        FROM {{ ref('fact_orders') }}
+        WHERE order_date >= CURRENT_DATE - INTERVAL 30 DAYS
+        GROUP BY DATE(order_date)
+      ),
+      stats AS (
+        SELECT 
+          AVG(daily_count) as avg_count,
+          STDDEV(daily_count) as stddev_count
+        FROM daily_orders
+      )
+      SELECT 
+        d.order_date,
+        d.daily_count,
+        s.avg_count,
+        ABS(d.daily_count - s.avg_count) / s.stddev_count as z_score
+      FROM daily_orders d
+      CROSS JOIN stats s
+      WHERE ABS(d.daily_count - s.avg_count) / s.stddev_count > 3  -- More than 3 standard deviations

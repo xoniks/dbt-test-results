@@ -1,0 +1,38 @@
+name: 'dbt_test_results'
+version: '1.0.0'
+description: "Automatically capture and store dbt test execution results with comprehensive monitoring, multi-adapter support, and enterprise-grade features"
+
+keywords: 
+  - "data quality"
+  - "test results" 
+  - "monitoring"
+  - "observability"
+  - "audit trail"
+  - "enterprise"
+  - "performance"
+  - "multi-adapter"
+  - "databricks"
+  - "snowflake"
+  - "bigquery"
+  - "postgresql"
+
+author: "dbt-test-results contributors"
+maintainer: "dbt-test-results team"
+license: "MIT"
+
+repository: "https://github.com/xoniks/dbt-test-results"
+homepage: "https://github.com/xoniks/dbt-test-results"
+documentation: "https://github.com/xoniks/dbt-test-results#readme"
+bug_tracker: "https://github.com/xoniks/dbt-test-results/issues"
+
+# Supported dbt adapters
+adapters:
+  - "databricks"
+  - "spark" 
+  - "snowflake"
+  - "bigquery"
+  - "postgres"
+  - "redshift"
+
+# Minimum dbt version
+require-dbt-version: ">=1.0.0"

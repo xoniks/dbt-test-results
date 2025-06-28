@@ -1,0 +1,170 @@
+name: 'dbt_test_results'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'dbt_test_results'
+
+# These configurations specify where dbt should look for different types of files.
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+require-dbt-version: ">=1.0.0"
+
+# Package dependencies
+packages:
+  - package: dbt-labs/dbt_utils
+    version: [">=0.8.0", "<2.0.0"]
+
+# Package variables with comprehensive configuration options
+vars:
+  dbt_test_results:
+    # ===== CORE SETTINGS =====
+    # Enable/disable the entire package functionality
+    enabled: true
+    
+    # Enable debug logging for troubleshooting
+    debug_mode: false
+    
+    # Fail build on package errors (recommended: true for production)
+    fail_on_error: false
+    
+    # ===== SCHEMA AND NAMING =====
+    # Default schema for storing test results (will be appended to model schema)
+    # Example: if model is in 'analytics' schema, results go to 'analytics_test_results'
+    schema_suffix: "_test_results"
+    
+    # Alternative: specify absolute schema name (overrides schema_suffix)
+    # absolute_schema: "test_results_central"
+    
+    # Prefix for test result table names (optional)
+    table_prefix: ""
+    
+    # ===== TABLE MANAGEMENT =====
+    # Automatically create tables if they don't exist
+    auto_create_tables: true
+    
+    # Automatically create schemas if they don't exist
+    auto_create_schemas: true
+    
+    # Validate table schema on startup
+    validate_schema: true
+    
+    # ===== PERFORMANCE SETTINGS =====
+    # Number of records to insert per batch (tune based on cluster size)
+    batch_size: 1000
+    
+    # Maximum number of batches to process in parallel
+    max_parallel_batches: 5
+    
+    # Use MERGE instead of INSERT for better concurrency
+    use_merge_strategy: false
+    
+    # ===== DATA RETENTION =====
+    # Automatically cleanup old test results (days, 0 = disabled)
+    retention_days: 90
+    
+    # Run cleanup automatically during package execution
+    auto_cleanup: false
+    
+    # ===== DELTA LAKE CONFIGURATION =====
+    table_config:
+      # File format (delta recommended for Databricks)
+      file_format: "delta"
+      
+      # Table type (managed or external)
+      table_type: "managed"
+      
+      # Optional: External table location
+      # location: "s3://my-bucket/test-results/"
+      
+      # Delta Lake table properties for optimization
+      table_properties:
+        "delta.autoOptimize.optimizeWrite": "true"
+        "delta.autoOptimize.autoCompact": "true"
+        "delta.enableChangeDataFeed": "false"
+        "delta.columnMapping.mode": "none"
+        # Uncomment for better query performance on large tables
+        # "delta.tuneFileSizesForRewrites": "true"
+        # "delta.targetFileSize": "134217728"  # 128MB
+    
+    # ===== FILTERING AND SELECTION =====
+    # Only store results for specific test types (empty = all tests)
+    include_test_types: []  # e.g., ["unique", "not_null", "custom"]
+    
+    # Exclude specific test types from storage
+    exclude_test_types: []  # e.g., ["relationships"]
+    
+    # Only store results for specific models (empty = all models)
+    include_models: []  # e.g., ["dim_customers", "fact_orders"]
+    
+    # Exclude specific models from result storage
+    exclude_models: []  # e.g., ["staging_*"]
+    
+    # Only store failed tests (useful for error monitoring)
+    failed_tests_only: false
+    
+    # ===== METADATA AND ENRICHMENT =====
+    # Include compiled SQL in metadata (warning: increases storage)
+    include_compiled_sql: false
+    
+    # Include test configuration in metadata
+    include_test_config: true
+    
+    # Include timing information
+    include_timing: true
+    
+    # Include dbt run context (target, profile info)
+    include_run_context: true
+    
+    # Custom tags to add to all test results
+    custom_tags: {}  # e.g., {"environment": "prod", "team": "analytics"}
+    
+    # ===== ERROR HANDLING =====
+    # Continue processing other tests if one fails to store
+    continue_on_storage_error: true
+    
+    # Maximum number of retries for failed inserts
+    max_retries: 2
+    
+    # Delay between retries (seconds)
+    retry_delay: 5
+    
+    # ===== LOGGING CONFIGURATION =====
+    logging:
+      # Log level: debug, info, warn, error
+      level: "info"
+      
+      # Include timestamps in log messages
+      include_timestamps: true
+      
+      # Log successful operations (can be verbose)
+      log_success: true
+      
+      # Log configuration on startup
+      log_config_on_startup: false
+
+# Model configurations
+models:
+  dbt_test_results:
+    +materialized: table
+    utils:
+      +materialized: view
+
+# Macro configurations
+dispatch:
+  - macro_namespace: dbt_test_results
+    search_order: ['dbt_test_results', 'dbt']
+
+# On-run-end hooks for capturing test results
+on-run-end:
+  - "{% if execute %}{{ dbt_test_results.store_test_results() }}{% endif %}"

@@ -1,0 +1,171 @@
+version: 2
+
+models:
+  # Large dataset with comprehensive testing for performance benchmarking
+  - name: large_dataset
+    description: "Large dataset for performance testing with 10k records"
+    config:
+      store_test_results: "large_dataset_performance_tests"
+    meta:
+      benchmark_type: "large_volume"
+      expected_test_count: 15
+      expected_duration_seconds: 30
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - unique:
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+
+      - name: email
+        description: "Customer email address"
+        tests:
+          - unique:
+              config:
+                severity: warn
+          - not_null:
+              config:
+                severity: warn
+
+      - name: email_with_nulls
+        description: "Email field with intentional nulls for testing"
+        tests:
+          - unique:
+              config:
+                severity: warn
+                where: "email_with_nulls IS NOT NULL"
+
+      - name: customer_name
+        description: "Customer display name"
+        tests:
+          - not_null:
+              config:
+                severity: error
+
+      - name: tier
+        description: "Customer tier"
+        tests:
+          - accepted_values:
+              values: ['premium', 'standard', 'basic']
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+
+      - name: status
+        description: "Customer status"
+        tests:
+          - accepted_values:
+              values: ['active', 'inactive', 'pending']
+              config:
+                severity: error
+          - not_null:
+              config:
+                severity: error
+
+      - name: lifetime_value
+        description: "Customer lifetime value"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+              config:
+                severity: warn
+
+      - name: created_date
+        description: "Customer creation date"
+        tests:
+          - not_null:
+              config:
+                severity: error
+          - dbt_utils.expression_is_true:
+              expression: ">= '2020-01-01'"
+              config:
+                severity: warn
+
+      - name: potentially_duplicate_id
+        description: "Field with potential duplicates for testing"
+        tests:
+          - unique:
+              config:
+                severity: warn  # Expected to fail for some records
+
+      - name: name_with_edge_cases
+        description: "Name field with edge cases for testing"
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+# Multi-model performance test - multiple models using same results table
+  - name: order_data
+    description: "Order data sharing results table for multi-model testing"
+    config:
+      store_test_results: "shared_performance_tests"  # Same table as inventory_data
+    meta:
+      benchmark_type: "shared_table"
+      related_model: "inventory_data"
+
+  - name: inventory_data  
+    description: "Inventory data sharing results table for multi-model testing"
+    config:
+      store_test_results: "shared_performance_tests"  # Same table as order_data
+    meta:
+      benchmark_type: "shared_table"
+      related_model: "order_data"
+
+# Custom tests for performance evaluation
+tests:
+  - name: performance_test_unique_emails
+    description: "Custom test for email uniqueness with performance tracking"
+    config:
+      store_test_results: "custom_performance_tests"
+    sql: |
+      SELECT email, COUNT(*) as duplicate_count
+      FROM {{ ref('large_dataset') }}
+      WHERE email IS NOT NULL
+      GROUP BY email
+      HAVING COUNT(*) > 1
+
+  - name: performance_test_data_quality_summary
+    description: "Comprehensive data quality test for performance measurement"
+    config:
+      store_test_results: "custom_performance_tests"
+    sql: |
+      WITH quality_metrics AS (
+        SELECT 
+          COUNT(*) as total_records,
+          COUNT(DISTINCT customer_id) as unique_customers,
+          SUM(CASE WHEN email IS NULL THEN 1 ELSE 0 END) as null_emails,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_customers,
+          AVG(lifetime_value) as avg_lifetime_value
+        FROM {{ ref('large_dataset') }}
+      )
+      SELECT *
+      FROM quality_metrics
+      WHERE total_records != unique_customers  -- Should pass if all IDs are unique
+
+  - name: performance_test_business_rules
+    description: "Complex business rule validation for performance testing"
+    config:
+      store_test_results: "custom_performance_tests"
+    sql: |
+      SELECT 
+        customer_id,
+        tier,
+        lifetime_value,
+        CASE 
+          WHEN tier = 'premium' AND lifetime_value < 1000 THEN 'Invalid: Premium customer with low LTV'
+          WHEN tier = 'basic' AND lifetime_value > 5000 THEN 'Invalid: Basic customer with high LTV'
+          ELSE 'Valid'
+        END as validation_result
+      FROM {{ ref('large_dataset') }}
+      WHERE (tier = 'premium' AND lifetime_value < 1000)
+         OR (tier = 'basic' AND lifetime_value > 5000)

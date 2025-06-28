@@ -1,0 +1,215 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for dbt-test-results
+title: "[FEATURE] "
+labels: ["enhancement", "needs-discussion"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Your ideas help make dbt-test-results better for everyone. Please provide as much detail as possible about your use case and requirements.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: Please confirm you have completed these steps before submitting
+      options:
+        - label: I have searched existing issues and discussions for similar feature requests
+          required: true
+        - label: I have reviewed the current roadmap and documentation
+          required: true
+        - label: This feature would benefit the broader dbt community (not just my specific use case)
+          required: true
+
+  - type: textarea
+    id: feature_summary
+    attributes:
+      label: Feature Summary
+      description: A brief, clear summary of the feature you'd like to see
+      placeholder: "In one sentence, what feature would you like to see added?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: Problem/Use Case
+      description: Describe the problem this feature would solve or the use case it would enable
+      placeholder: |
+        What problem are you trying to solve? Why is this important?
+        
+        Examples:
+        - "Our team needs to monitor test performance trends across multiple environments"
+        - "We require integration with external monitoring tools for alerting"
+        - "Large test suites need better memory optimization"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature_category
+    attributes:
+      label: Feature Category
+      description: Which category best describes your feature request?
+      options:
+        - Performance optimization
+        - New adapter support
+        - Dashboard/visualization templates
+        - Alerting and notifications
+        - Data retention and cleanup
+        - Security and compliance
+        - Configuration and customization
+        - Integration with external tools
+        - Documentation and examples
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Describe how you envision this feature working
+      placeholder: |
+        How would you like this feature to work? Be as specific as possible.
+        
+        Include:
+        - Configuration options
+        - Expected behavior
+        - User interface considerations
+        - Integration points
+    validations:
+      required: true
+
+  - type: textarea
+    id: example_usage
+    attributes:
+      label: Example Usage
+      description: Provide concrete examples of how this feature would be used
+      placeholder: |
+        Show example configuration, code snippets, or workflows that demonstrate the feature in action.
+        
+        Example:
+        ```yaml
+        vars:
+          dbt_test_results:
+            alerting:
+              enabled: true
+              webhook_url: "https://hooks.slack.com/services/..."
+              failure_threshold: 5
+        ```
+      render: yaml
+
+  - type: dropdown
+    id: user_persona
+    attributes:
+      label: Primary User
+      description: Who would primarily benefit from this feature?
+      options:
+        - Individual analytics engineers
+        - Small data teams (2-10 people)
+        - Medium organizations (10-100 people)
+        - Large enterprises (100+ people)
+        - Data platform teams
+        - Compliance/audit teams
+        - All user types
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to you and your team?
+      options:
+        - Low - Nice to have enhancement
+        - Medium - Would improve our workflow significantly
+        - High - Important for our current needs
+        - Critical - Blocking our adoption or usage
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: |
+        - Other packages or tools you've evaluated
+        - Workarounds you've implemented
+        - Why those alternatives don't fully meet your needs
+
+  - type: textarea
+    id: impact_assessment
+    attributes:
+      label: Impact Assessment
+      description: How would this feature impact existing functionality?
+      placeholder: |
+        Consider:
+        - Backward compatibility requirements
+        - Performance implications
+        - Configuration complexity
+        - Maintenance overhead
+
+  - type: dropdown
+    id: adapter_scope
+    attributes:
+      label: Adapter Scope
+      description: Which database adapters should this feature support?
+      multiple: true
+      options:
+        - Databricks/Spark
+        - BigQuery
+        - Snowflake
+        - PostgreSQL
+        - All current adapters
+        - New adapter (please specify below)
+        - Adapter-agnostic
+
+  - type: textarea
+    id: success_criteria
+    attributes:
+      label: Success Criteria
+      description: How would you measure the success of this feature?
+      placeholder: |
+        What would indicate that this feature is working well?
+        
+        Examples:
+        - "Reduces test result query time by 50%"
+        - "Enables monitoring of 100k+ tests without performance issues"
+        - "Provides real-time alerts within 30 seconds of test failures"
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other information that would help evaluate this feature?
+      placeholder: |
+        - Links to relevant documentation or examples
+        - Screenshots or mockups if applicable
+        - Related issues or discussions
+        - Timeline considerations
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to contribute to implementing this feature?
+      options:
+        - label: I would be willing to submit a PR to implement this feature
+        - label: I can help with design and testing
+        - label: I can provide feedback and validation during development
+        - label: I can contribute documentation and examples
+
+  - type: dropdown
+    id: timeline
+    attributes:
+      label: Desired Timeline
+      description: When would you ideally like to see this feature?
+      options:
+        - No specific timeline
+        - Next minor release (v1.x)
+        - Next major release (v2.0)
+        - Within 3 months
+        - Within 6 months
+        - Within 1 year

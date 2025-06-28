@@ -1,0 +1,59 @@
+[sqlfluff]
+# SQL dialect to use
+dialect = sparksql
+
+# Rules to exclude
+exclude_rules = L034,L036,L044,L031
+
+# Template variables
+templater = dbt
+
+# Indentation configuration
+[sqlfluff:indentation]
+indent_unit = space
+tab_space_size = 2
+
+# Layout configuration
+[sqlfluff:layout:type:comma]
+line_position = trailing
+
+# Rules configuration
+[sqlfluff:rules:L010]
+# Keywords should be consistently lower case
+capitalisation_policy = lower
+
+[sqlfluff:rules:L014]
+# Unquoted identifiers should be consistently lower case
+capitalisation_policy = lower
+
+[sqlfluff:rules:L030]
+# Function names should be consistently lower case
+capitalisation_policy = lower
+
+[sqlfluff:rules:L040]
+# Null & Boolean literals should be consistently lower case
+capitalisation_policy = lower
+
+[sqlfluff:rules:L042]
+# Join/From clauses should not contain subqueries. Use CTEs instead
+forbid_subquery_in = both
+
+[sqlfluff:rules:L047]
+# Consistent syntax to count all rows
+prefer_count_1 = false
+
+[sqlfluff:rules:L052]
+# Semi-colon formatting approach
+multiline_newline = false
+require_final_semicolon = false
+
+[sqlfluff:rules:L054]
+# GROUP BY/ORDER BY column references
+group_by_and_order_by_style = consistent
+
+# dbt-specific configuration
+[sqlfluff:templater:dbt]
+project_dir = ./integration_tests/
+profiles_dir = ./integration_tests/
+profile = dbt_test_results_integration_tests
+target = dev

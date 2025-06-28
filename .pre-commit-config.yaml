@@ -1,0 +1,159 @@
+# Pre-commit hooks for dbt-test-results package
+# See https://pre-commit.com for more information
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+        exclude: \.md$
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        name: Format YAML files
+        files: \.(yml|yaml)$
+        args: [--write]
+
+  # SQL formatting (using sqlfluff)
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 2.3.5
+    hooks:
+      - id: sqlfluff-lint
+        name: Lint SQL files
+        files: \.sql$
+        args: [--dialect=sparksql, --exclude-rules=L034,L036]
+        additional_dependencies: [dbt-core, dbt-spark]
+      - id: sqlfluff-fix
+        name: Fix SQL files
+        files: \.sql$
+        args: [--dialect=sparksql, --exclude-rules=L034,L036]
+        additional_dependencies: [dbt-core, dbt-spark]
+
+  # Python code quality
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Format Python files
+        language_version: python3
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Sort Python imports
+        args: [--profile, black]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: Lint Python files
+        args: [--max-line-length=88, --extend-ignore=E203,W503]
+
+  # Security checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Security check Python files
+        args: [-r, ., -f, json, -o, bandit-report.json]
+        files: \.py$
+        exclude: tests/
+
+  # Check for secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hardcoded secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: \.secrets\.baseline$
+
+  # Custom hooks for dbt-test-results
+  - repo: local
+    hooks:
+      # Validate package structure
+      - id: validate-package
+        name: Validate package structure
+        entry: python .github/scripts/validate_package.py
+        language: system
+        files: ^(dbt_project\.yml|macros/.*\.sql|examples/.*|integration_tests/.*)$
+        pass_filenames: false
+
+      # Security validation
+      - id: validate-security
+        name: Validate security practices
+        entry: python .github/scripts/validate_security.py
+        language: system
+        files: ^macros/.*\.sql$
+        pass_filenames: false
+
+      # Check macro documentation
+      - id: check-macro-docs
+        name: Check macro documentation
+        entry: bash -c 'for file in macros/*.sql; do if ! grep -q "^{#" "$file"; then echo "Missing documentation in $file"; exit 1; fi; done'
+        language: system
+        files: ^macros/.*\.sql$
+        pass_filenames: false
+
+      # Validate dbt compilation
+      - id: validate-dbt-compile
+        name: Validate dbt compilation
+        entry: bash -c 'cd integration_tests && dbt deps && dbt parse'
+        language: system
+        files: ^(macros/.*\.sql|dbt_project\.yml|integration_tests/.*)$
+        pass_filenames: false
+
+      # Check for TODO comments
+      - id: check-todos
+        name: Check for TODO comments
+        entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.sql" --include="*.yml" .; then echo "TODO comments found - please resolve before committing"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # Validate version consistency
+      - id: validate-version
+        name: Validate version consistency
+        entry: bash -c 'VERSION=$(grep "version:" dbt_project.yml | sed "s/version: *\x27*\([^\x27]*\)\x27*/\1/" | tr -d \x22); if ! grep -q "$VERSION" CHANGELOG.md; then echo "Version $VERSION not found in CHANGELOG.md"; exit 1; fi'
+        language: system
+        files: ^(dbt_project\.yml|CHANGELOG\.md)$
+        pass_filenames: false
+
+      # Check file permissions
+      - id: check-permissions
+        name: Check executable permissions
+        entry: bash -c 'find . -name "*.sh" -not -executable -print | while read file; do echo "Script not executable: $file"; done | grep . && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+
+# Global configuration
+default_language_version:
+  python: python3
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

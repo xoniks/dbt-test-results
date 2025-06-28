@@ -1,0 +1,52 @@
+# Copy this file to ~/.dbt/profiles.yml and update the connection details
+# Or create a profiles.yml in this directory for local testing
+
+dbt_test_results_integration_tests:
+  outputs:
+    dev:
+      type: databricks
+      catalog: [your_catalog]  # e.g., 'dev' or 'hive_metastore'
+      schema: [your_schema]    # e.g., 'dbt_test_results_integration'
+      host: [your_host]        # e.g., 'company.cloud.databricks.com'
+      http_path: [your_path]   # e.g., '/sql/1.0/warehouses/abc123'
+      token: [your_token]      # Personal access token or use environment variable
+      threads: 4
+      
+      # Optional: Use environment variables for sensitive data
+      # token: "{{ env_var('DBT_DATABRICKS_TOKEN') }}"
+      
+    prod:
+      type: databricks
+      catalog: [your_prod_catalog]
+      schema: [your_prod_schema]
+      host: [your_prod_host]
+      http_path: [your_prod_path]
+      token: [your_prod_token]
+      threads: 8
+
+  target: dev
+
+# Alternative configuration for local development with DuckDB
+# Uncomment the section below if you want to test locally without Databricks
+
+# dbt_test_results_integration_tests:
+#   outputs:
+#     dev:
+#       type: duckdb
+#       path: 'integration_test.duckdb'
+#       schema: 'main'
+#       threads: 4
+#   target: dev
+
+# Alternative configuration for Spark/Hive
+# dbt_test_results_integration_tests:
+#   outputs:
+#     dev:
+#       type: spark
+#       method: thrift
+#       host: [your_spark_host]
+#       port: 10000
+#       user: [your_username]
+#       schema: [your_schema]
+#       threads: 4
+#   target: dev

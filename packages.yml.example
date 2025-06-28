@@ -1,0 +1,18 @@
+# Example packages.yml file for installing dbt-test-results
+# Copy this to your dbt project as packages.yml
+
+packages:
+  # Install from GitHub (recommended for latest features)
+  - git: https://github.com/your-org/dbt-test-results.git
+    revision: v1.0.0  # Pin to specific version
+
+  # Alternative: Install from dbt Hub (once published)
+  # - package: your-org/dbt_test_results
+  #   version: [">=1.0.0", "<2.0.0"]
+
+  # Required dependency
+  - package: dbt-labs/dbt_utils
+    version: [">=0.8.0", "<2.0.0"]
+
+# After adding this file, run:
+# dbt deps

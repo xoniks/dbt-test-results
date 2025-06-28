@@ -1,0 +1,58 @@
+name: Minimal CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    name: Validate Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dbt
+        run: |
+          pip install dbt-core==1.8.0 dbt-duckdb
+
+      - name: Check required files
+        run: |
+          echo "✅ Checking package structure..."
+          test -f dbt_project.yml && echo "✅ dbt_project.yml exists"
+          test -f README.md && echo "✅ README.md exists"
+          test -f hub.yml && echo "✅ hub.yml exists"
+          test -d macros && echo "✅ macros/ directory exists"
+          echo "✅ Package structure validated"
+
+      - name: Test dbt compilation
+        run: |
+          echo "✅ Testing dbt compilation..."
+          cd integration_tests
+          
+          # Create minimal profiles.yml
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          dbt_test_results_integration_tests:
+            outputs:
+              dev:
+                type: duckdb
+                path: ':memory:'
+            target: dev
+          EOF
+          
+          # Test compilation only
+          echo "Installing dependencies..."
+          dbt deps --quiet
+          echo "Parsing project..."
+          dbt parse --quiet
+          echo "Compiling project..."
+          dbt compile --quiet
+          echo "✅ dbt compilation successful"
