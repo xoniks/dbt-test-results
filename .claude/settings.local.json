@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(dbt:*)",
+      "Bash(grep:*)",
+      "Bash(python:*)",
+      "Bash(./scripts/create_release.sh:*)",
+      "Bash(cat:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}
