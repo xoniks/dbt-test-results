@@ -1,0 +1,18 @@
+name: 'dbt_test_results'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_test_results'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+require-dbt-version: ">=1.0.0"
+
+# Automatically add the hook - no user configuration needed
+on-run-end:
+  - "{% if execute %}{{ dbt_test_results.store_test_results() }}{% endif %}"
