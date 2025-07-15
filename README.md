@@ -27,7 +27,7 @@ Create `packages.yml` in your project root:
 ```yaml
 packages:
   - git: "https://github.com/xoniks/dbt-test-results.git"
-    revision: "v1.0.0"  # Use specific version for stability
+    revision: "v0.0.1"  # Use specific version for stability
 ```
 
 Run:
@@ -140,6 +140,14 @@ That's it! The package has minimal configuration options.
 
 - **dbt-core**: >= 1.0.0
 - **Database**: Databricks/Spark with Delta Lake (optimized for this platform)
+
+## 🚧 Roadmap
+
+### Planned Features
+
+- **Source Test Support**: Capture test results for source tables (coming soon)
+- **Bulk Results Table**: Optional single table for all test results across models
+- **Enhanced Metadata**: Additional test execution details and performance metrics
 
 ## 🐛 Troubleshooting
 
