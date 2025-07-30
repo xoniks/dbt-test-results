@@ -90,6 +90,11 @@
     {% endif %}
   {% endfor %}
 
+  {# Apply Databricks column tags after storing test results #}
+  {% if execute %}
+    {{ apply_databricks_column_tags() }}
+  {% endif %}
+
   {{ return('') }}
 {% endmacro %}
 
