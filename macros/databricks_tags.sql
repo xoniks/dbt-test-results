@@ -27,13 +27,23 @@
       
       {% if model_relation %}
         {% for column_name, test_list in column_tests.items() %}
-          {% set test_names = test_list | join(',') %}
-          {% set tag_sql %}
-            ALTER TABLE {{ model_relation }} 
-            ALTER COLUMN {{ column_name }} SET TAGS ('dbt_tests' = '{{ test_names }}')
-          {% endset %}
-          
-          {% do run_query(tag_sql) %}
+          {% if test_list | length > 0 %}
+            {% set test_names = test_list | join(',') %}
+            {% set tag_sql %}
+              ALTER TABLE {{ model_relation }} 
+              ALTER COLUMN {{ column_name }} SET TAGS ('dbt_tests' = '{{ test_names }}')
+            {% endset %}
+            
+            {% do run_query(tag_sql) %}
+          {% else %}
+            {# Remove dbt_tests tag if no tests exist for this column #}
+            {% set remove_tag_sql %}
+              ALTER TABLE {{ model_relation }} 
+              ALTER COLUMN {{ column_name }} UNSET TAGS ('dbt_tests')
+            {% endset %}
+            
+            {% do run_query(remove_tag_sql) %}
+          {% endif %}
         {% endfor %}
       {% endif %}
     {% endif %}
@@ -45,7 +55,14 @@
 {% macro get_column_tests_for_model(model_node) %}
   {% set column_tests = {} %}
   
-  {# Find all tests that depend on this model #}
+  {# Initialize all columns from model definition with empty test lists #}
+  {% if model_node.columns %}
+    {% for column_name, column_info in model_node.columns.items() %}
+      {% do column_tests.update({column_name: []}) %}
+    {% endfor %}
+  {% endif %}
+  
+  {# Find all tests that depend on this model and populate test lists #}
   {% for test_node in graph.nodes.values() %}
     {% if test_node.resource_type == 'test' %}
       {# Check if this test depends on our model #}
